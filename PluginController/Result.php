@@ -58,6 +58,9 @@ class Result
         return $this->pluginException;
     }
 
+    /**
+     * @return \JMS\Payment\CoreBundle\Entity\FinancialTransaction
+     */
     public function getFinancialTransaction()
     {
         return $this->financialTransaction;

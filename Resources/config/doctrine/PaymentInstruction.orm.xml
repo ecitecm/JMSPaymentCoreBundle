@@ -18,7 +18,9 @@
         <field name="depositedAmount" column="deposited_amount" type="decimal" scale="5" />
         <field name="depositingAmount" column="depositing_amount" type="decimal" scale="5" />
         <field name="extendedData" column="extended_data" type="extended_payment_data" />
-        <field name="paymentSystemName" column="payment_system_name" type="string" length="100" />
+        <many-to-one field="paymentSystemName" target-entity="NetflowCRM\BackendBundle\Entity\Merchant">
+            <join-column name="merchant_id" referenced-column-name="id" />
+        </many-to-one>
         <field name="reversingApprovedAmount" column="reversing_approved_amount" type="decimal" scale="5" />
         <field name="reversingCreditedAmount" column="reversing_credited_amount" type="decimal" scale="5" />
         <field name="reversingDepositedAmount" column="reversing_deposited_amount" type="decimal" scale="5" />

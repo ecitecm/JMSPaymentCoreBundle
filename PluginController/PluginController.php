@@ -708,11 +708,12 @@ abstract class PluginController implements PluginControllerInterface
     {
         $instruction = $payment->getPaymentInstruction();
         if (PaymentInstructionInterface::STATE_VALID !== $instruction->getState()) {
-            throw new InvaliPaymentInstructionException('PaymentInstruction must be in STATE_VALID.');
+            throw new InvalidPaymentInstructionException('PaymentInstruction must be in STATE_VALID.');
         }
 
-        if (PaymentInterface::STATE_APPROVED !== $payment->getState()) {
-            throw new InvalidPaymentException('Payment must be in STATE_APPROVED.');
+        // allow attempted void of approveAndDeposit transactions
+        if (!in_array($payment->getState(), array(PaymentInterface::STATE_APPROVED, PaymentInterface::STATE_DEPOSITED)) {
+            throw new InvalidPaymentException('Payment must be in STATE_APPROVED or STATE_DEPOSITED.');
         }
 
         $transaction = $instruction->getPendingTransaction();
@@ -947,8 +948,8 @@ abstract class PluginController implements PluginControllerInterface
             throw new InvalidPaymentInstructionException('PaymentInstruction must be in STATE_VALID.');
         }
 
-        if (PaymentInterface::STATE_APPROVED !== $payment->getState()) {
-            throw new InvalidPaymentException('Payment must be in STATE_APPROVED.');
+        if (!in_array($payment->getState(), array(PaymentInterface::STATE_APPROVED, PaymentInterface::STATE_DEPOSITED))) {
+            throw new InvalidPaymentException('Payment must be in STATE_APPROVED or STATE_DEPOSITED.');
         }
 
         $transaction = $instruction->getPendingTransaction();
@@ -965,6 +966,7 @@ abstract class PluginController implements PluginControllerInterface
             $transaction->setTransactionType(FinancialTransactionInterface::TRANSACTION_TYPE_REVERSE_DEPOSIT);
             $transaction->setState(FinancialTransactionInterface::STATE_PENDING);
             $transaction->setRequestedAmount($amount);
+            $transaction->setPayment($payment);
 
             $payment->setReversingDepositedAmount($amount);
             $instruction->setReversingDepositedAmount($instruction->getReversingDepositedAmount() + $amount);
@@ -1014,6 +1016,10 @@ abstract class PluginController implements PluginControllerInterface
         } catch (PluginFinancialException $ex) {
             $transaction->setState(FinancialTransactionInterface::STATE_FAILED);
 
+            // If we dont fixup the amounts here it wont be possible to attempt refund at later time
+            $payment->setReversingDepositedAmount(0.0);
+            $instruction->setReversingDepositedAmount($instruction->getReversingDepositedAmount() - $amount);
+
             return $this->buildFinancialTransactionResult($transaction, Result::STATUS_FAILED, $transaction->getReasonCode());
         } catch (PluginBlockedException $blocked) {
             $transaction->setState(FinancialTransactionInterface::STATE_PENDING);
@@ -1036,7 +1042,8 @@ abstract class PluginController implements PluginControllerInterface
         }
     }
 
-    protected function getPlugin($paymentSystemName)
+    // hacked to public access so custom wrapping payment engine doesnt keep re-adding same plugin
+    public function getPlugin($paymentSystemName)
     {
         foreach ($this->plugins as $plugin) {
             if ($plugin->processes($paymentSystemName)) {
