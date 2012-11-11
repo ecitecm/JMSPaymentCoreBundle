@@ -712,7 +712,7 @@ abstract class PluginController implements PluginControllerInterface
         }
 
         // allow attempted void of approveAndDeposit transactions
-        if (!in_array($payment->getState(), array(PaymentInterface::STATE_APPROVED, PaymentInterface::STATE_DEPOSITED)) {
+        if (!in_array($payment->getState(), array(PaymentInterface::STATE_APPROVED, PaymentInterface::STATE_DEPOSITED))) {
             throw new InvalidPaymentException('Payment must be in STATE_APPROVED or STATE_DEPOSITED.');
         }
 
